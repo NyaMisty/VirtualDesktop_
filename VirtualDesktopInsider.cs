@@ -8,6 +8,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.Text;
+using System.Text.RegularExpressions;
 
 // set attributes
 using System.Reflection;
@@ -1265,7 +1266,7 @@ namespace VDeskTool
 								{
 									try
 									{ // seeking window with window title
-										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim().Replace("^", ""));
+										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim());
 										// seeking desktop for window handle
 										rc = VirtualDesktop.Desktop.FromDesktop(VirtualDesktop.Desktop.FromWindow((IntPtr)iParam));
 										if (verbose) Console.WriteLine("Window '" + foundTitle + "' is on desktop number " + rc.ToString() + " (desktop '" + VirtualDesktop.Desktop.DesktopNameFromIndex(rc) + "')");
@@ -1364,7 +1365,7 @@ namespace VDeskTool
 								{
 									try
 									{ // seeking window with window title
-										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim().Replace("^", ""));
+										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim());
 										// checking desktop for window handle
 										if (VirtualDesktop.Desktop.FromIndex(rc).HasWindow((IntPtr)iParam))
 										{
@@ -1449,7 +1450,7 @@ namespace VDeskTool
 								{
 									try
 									{ // seeking window with window title
-										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim().Replace("^", ""));
+										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim());
 										// move window
 										VirtualDesktop.Desktop.FromIndex(rc).MoveWindow((IntPtr)iParam);
 										if (verbose) Console.WriteLine("Window '" + foundTitle + "' moved to desktop number " + rc.ToString() + " (desktop '" + VirtualDesktop.Desktop.DesktopNameFromIndex(rc) + "')");
@@ -1548,7 +1549,7 @@ namespace VDeskTool
 								{
 									try
 									{ // seeking window with window title
-										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim().Replace("^", ""));
+										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim());
 										if (VirtualDesktop.Desktop.IsWindowPinned((IntPtr)iParam))
 										{
 											if (verbose) Console.WriteLine("Window '" + foundTitle + "' is pinned to all desktops");
@@ -1631,7 +1632,7 @@ namespace VDeskTool
 								{
 									try
 									{ // seeking window with window title
-										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim().Replace("^", ""));
+										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim());
 										// pin window
 										VirtualDesktop.Desktop.PinWindow((IntPtr)iParam);
 										if (verbose) Console.WriteLine("Window '" + foundTitle + "' pinned to all desktops");
@@ -1707,7 +1708,7 @@ namespace VDeskTool
 								{
 									try
 									{ // seeking window with window title
-										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim().Replace("^", ""));
+										iParam = (Int32)GetWindowFromTitle(groups[2].Value.Trim());
 										// unpin window
 										VirtualDesktop.Desktop.UnpinWindow((IntPtr)iParam);
 										if (verbose) Console.WriteLine("Window '" + foundTitle + "' unpinned from all desktops");
@@ -1943,11 +1944,22 @@ namespace VDeskTool
 
 			if (!string.IsNullOrEmpty(title) && IsWindowVisible(hWnd))
 			{
-				if (title.ToUpper().IndexOf(searchTitle.ToUpper()) >= 0)
-				{
+				var matched = false;
+				if (searchTitle.StartsWith("regex(") && searchTitle.EndsWith(")")) {
+					var r = searchTitle.Substring(6, searchTitle.Length - 7);
+					var match = Regex.Match(title, r);
+					if (match.Success){
+						matched = true;
+					}
+				} else {
+					var r = searchTitle.Replace("^", "");
+					if (title.ToUpper().IndexOf(r.ToUpper()) >= 0)
+					{
+						matched = true;
+					}
+				}
+				if (matched) {
 					foundHandle = hWnd;
-					foundTitle = title;
-					return false;
 				}
 			}
 			return true;
